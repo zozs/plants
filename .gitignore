@@ -1,0 +1,5 @@
+*.swp
+public/bower_components/
+node_modules/
+plants.sqlite
+plants.json
