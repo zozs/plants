@@ -1,0 +1,43 @@
+/*
+ * This file is distributed under the terms of the ISC License.
+ * See the file LICENSE at https://github.com/zozs/plants
+ */
+
+@font-face {
+  font-family: 'Raleway';
+  src: url('fonts/raleway_thin-webfont.woff') format('woff');
+}
+
+body {
+  font-family: 'Helvetica', 'Arial', sans-serif;
+  font-weight: 300;
+  padding-top: 130px;
+}
+
+.nav, .pagination, .carousel, .panel-title a { cursor: pointer; }
+
+.navbar {
+  min-height: 100px;
+}
+
+.navbar button {
+  margin-top: 30px;
+  margin-left: 100px;
+}
+
+.navbar-header {
+  margin-top: 25px;
+}
+
+.navbar-brand {
+  font-family: 'Raleway';
+  font-size: 38pt;
+}
+
+.row-changes {
+  margin-bottom: 30px;
+}
+
+.water-date {
+  color: grey;
+}

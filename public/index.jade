@@ -1,0 +1,143 @@
+doctype html
+
+html(ng-app="plantsApp")
+  head
+    meta(charset="utf-8")
+    meta(http-equiv="X-UA-Compatible", content="IE=edge")
+    meta(name="viewport", content="width=device-width, initial-scale=1")
+    link(rel="stylesheet", href="bower_components/bootstrap/dist/css/bootstrap.min.css")
+    link(rel='stylesheet', href='bower_components/angular-chart.js/dist/angular-chart.css')
+    link(rel="stylesheet", href="index.css")
+    link(rel="icon", href="favicon16.png")
+    title Plants
+
+  body(ng-controller="PlantsCtrl")
+    nav.navbar.navbar-default.navbar-fixed-top
+      .container
+        .navbar-header
+          a.navbar-brand plants
+
+    .container
+      .row
+        .col-md-4(ng-repeat="place in places")
+          h3 {{ place.name }}
+          table.table.table-striped.table-condensed
+            thead: tr
+              th Plant
+              th(colspan='2') Days since water
+              th.text-right
+                .btn-group.btn-group-xs
+                  button.btn.btn-default(ng-click='toggleHidePlace(place)')
+                    span.glyphicon.glyphicon-eye-open(ng-hide='place.showHidden')
+                    span.glyphicon.glyphicon-eye-close(ng-show='place.showHidden')
+                  button.btn.btn-default(ng-click='addNewPlant(place)')
+                    span.glyphicon.glyphicon-plus
+            tbody: tr(ng-repeat="plant in place.plants | filter:shouldBeHidden(place.showHidden)")
+              td {{plant.name}}
+              td.text-right {{daysSinceWater(plant).text}} 
+              td: small.water-date {{daysSinceWater(plant).textAlt}}
+              td.text-right
+                .btn-group.btn-group-xs(uib-dropdown, ng-show="!isWateredToday(plant)")
+                  button.btn.btn-primary(ng-click="waterPlant(plant, 0)")
+                    span.glyphicon.glyphicon-tint
+                  button.btn.btn-primary(uib-dropdown-toggle)
+                    span.caret
+                    span.sr-only Toggle Dropdown
+                  ul.uib-dropdown-menu(role='menu')
+                    li: a(href="#", ng-click='waterPlant(plant, 0)') Today
+                    li: a(href="#", ng-click='waterPlant(plant, -1)') Yesterday
+                    li: a(href="#", ng-click='waterPlant(plant, -2)') Two days ago
+                    li.divider
+                    li: a(href="#", ng-click='plantStatistics(plant)') Plant statistics
+                    li: a(href="#", ng-click='editPlant(plant)') Edit plant
+                .btn-group.btn-group-xs(uib-dropdown, ng-show="isWateredToday(plant)")
+                  button.btn.btn-success
+                    span.glyphicon.glyphicon-ok
+                  button.btn.btn-success(uib-dropdown-toggle)
+                    span.caret
+                    span.sr-only Toggle Dropdown
+                  ul.uib-dropdown-menu(role='menu')
+                    li: a(href="#", ng-click='plantStatistics(plant)') Plant statistics
+                    li: a(href="#", ng-click='editPlant(plant)') Edit plant
+    script(src="bower_components/angular/angular.min.js")
+    script(src="bower_components/angular-bootstrap/ui-bootstrap-tpls.min.js")
+    script(src='bower_components/Chart.js/Chart.min.js')
+    script(src="bower_components/angular-chart.js/dist/angular-chart.min.js")
+    script(src="index.js")
+
+    script(type='text/ng-template', id='editPlantContent.html')
+      .modal-header
+        h3.modal-title {{ vm.plant.name }}
+      .modal-body
+        table.table.table-condensed.table-striped
+          thead
+            tr
+              th Date
+              th
+          tbody
+            tr(ng-repeat='date in vm.plant.dates track by $index')
+              td {{ date }}
+              td
+                button.close(type='button', ng-click='vm.deleteDate(date, $index)')
+                  span &times;
+        label New date
+        p.input-group.input-group-sm
+          span.input-group-btn
+            button.btn.btn-default(type='button', ng-click='vm.open($event)')
+              i.glyphicon.glyphicon-calendar
+          input.form-control(type='text', uib-datepicker-popup='yyyy-MM-dd', ng-model='vm.date',
+            is-open='vm.dateOpened', datepicker-opetions='vm.dateOptions', ng-required='true',
+            close-text='Close')
+          span.input-group-btn
+            button.btn.btn-default(type='button', ng-click='vm.addDate(vm.date)')
+              i.glyphicon.glyphicon-plus
+        label New plant name
+        p.input-group.input-group-sm
+          input.form-control(type='text', ng-model='vm.newName')
+          span.input-group-btn
+            button.btn.btn-warning(type='button',
+                                   ng-click='vm.saveName(vm.newName)',
+                                   ng-if='vm.newName != vm.plant.name')
+              i.glyphicon.glyphicon-floppy-disk
+            button.btn.btn-success(type='button',
+                                   ng-if='vm.newName == vm.plant.name')
+              i.glyphicon.glyphicon-ok
+        label(ng-show='vm.plant.hidden') Plant is currently marked as hidden
+        p: button.btn.btn-default(ng-click='vm.setHidden(false)', ng-show='vm.plant.hidden') Mark as visible
+        label(ng-hide='vm.plant.hidden') Plant is currently marked as visible
+        p: button.btn.btn-default(ng-click='vm.setHidden(true)', ng-hide='vm.plant.hidden') Mark as hidden
+      .modal-footer
+        button.btn.btn-danger.pull-left(type='button', ng-click='vm.deletePlant()') Delete plant
+        button.btn.btn-primary(type='button', ng-click='vm.ok()') OK
+
+    script(type='text/ng-template', id='plantStatisticsContent.html')
+      .modal-header
+        h3.modal-title {{ vm.plant.name }}
+      .modal-body
+        table.table.table-condensed.table-striped
+          tbody
+            tr(ng-repeat='stat in vm.stats')
+              td {{ stat.name }}
+              td {{ stat.value | number:1 }} days
+
+        .row
+          .col-md-12
+            label Histogram
+            canvas.chart.chart-bar(chart-data='vm.histogram.data',
+                                   chart-labels='vm.histogram.labels',
+                                   chart-series='vm.histogram.series')
+            label Timeline
+            canvas.chart.chart-bar(chart-data='vm.timeline.data',
+                                   chart-labels='vm.timeline.labels',
+                                   chart-series='vm.timeline.series')
+      .modal-footer
+        button.btn.btn-primary(type='button', ng-click='vm.ok()') OK
+
+    script(type='text/ng-template', id='deletePlantContent.html')
+      .modal-header
+        h3.modal-title Delete plant
+      .modal-body
+        p Are you sure you want to delete the plant?
+      .modal-footer
+        button.btn.btn-primary(type='button', ng-click='$dismiss()') Cancel
+        button.btn.btn-danger(type='button', ng-click='$close()') Yes, delete it

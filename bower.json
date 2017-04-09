@@ -1,0 +1,26 @@
+{
+  "name": "plants",
+  "main": "index.html",
+  "version": "1.0.0",
+  "authors": [
+    "Linus Karlsson <plants@linuskarlsson.se>"
+  ],
+  "description": "Keep track of when I watered my plants the last time.",
+  "license": "ISC",
+  "homepage": "https://github.com/zozs/plants",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "angular-bootstrap": "~0.14.2",
+    "bootstrap": "~3.3.4",
+    "angular-chart.js": "~0.8.8"
+  },
+  "resolutions": {
+    "angular-bootstrap": "~0.14.2"
+  }
+}
