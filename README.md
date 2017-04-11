@@ -1,10 +1,15 @@
 plants
 ======
 
-Keeps track of when I watered my plants the last time. They tend to die otherwise :unamused:
+Keeps track of when I last watered my plants. They tend to die otherwise :unamused:
 
 ## Screenshot
 ![Screenshot of plants](/../screenshots/screenshot_relevant.png?raw=true "Web interface")
+
+Plants also features some really fancy statistics. Haven't you always wanted to know the standard
+deviation between different waterings of your plants?!
+
+![Screenshot of plants stats](/../screenshots/screenshot_stats.png?raw=true "Stats interface")
 
 ## License
 
