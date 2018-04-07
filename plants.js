@@ -1,12 +1,10 @@
 const express = require('express')
-const app = express()
 const bodyParser = require('body-parser')
-const jadeStatic = require('connect-jade-static')
 const path = require('path')
 const pRouter = require('express-promise-router')
 const util = require('util')
 
-// create application/json parser
+const app = express()
 const jsonParser = bodyParser.json()
 
 const port = process.env.PORT || 9811
@@ -56,7 +54,7 @@ async function getPlace (placeId) {
       plants: await getPlants(placeId)
     }
   } else {
-    throw new NotFoundError(404, 'No such plant!')
+    throw new NotFoundError(404, 'No such place!')
   }
 }
 
@@ -96,7 +94,7 @@ async function getPlant (plantId) {
       dates: await getDates(plantId)
     }
   } catch (e) {
-    throw new NotFoundError('No such plant exists!')
+    throw new NotFoundError('No such plant!')
   }
 }
 
@@ -146,14 +144,13 @@ router.route('/plants/:plant_id/dates/:date')
   })
 
 app.use('/' + baseUrl, router)
+app.set('view engine', 'pug')
+
+// The only pug-file is the index html.
+app.get('/', (req, res) => res.render(path.join(__dirname, 'public', 'index')))
+
 // Serve static files.
 app.use(express.static(path.join(__dirname, '/public')))
-
-app.use(jadeStatic({
-  baseDir: path.join(__dirname, '/public'),
-  baseUrl: '/',
-  maxAge: 86400
-}))
 
 // Error handlers.
 function notFoundErrorHandler (err, req, res, next) {
