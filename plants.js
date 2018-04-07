@@ -3,6 +3,7 @@ const app = express()
 const bodyParser = require('body-parser')
 const jadeStatic = require('connect-jade-static')
 const path = require('path')
+const pRouter = require('express-promise-router')
 const util = require('util')
 
 // create application/json parser
@@ -22,11 +23,18 @@ db.serialize(() => {
   db.run('CREATE TABLE IF NOT EXISTS events (id INTEGER PRIMARY KEY AUTOINCREMENT, plant INTEGER REFERENCES plants (id) NOT NULL, d DATE NOT NULL)')
 })
 
-const router = express.Router()
+const router = pRouter()
 
 const baseUrl = 'api'
 
 router.get('/', (req, res) => res.json({message: 'api ready to pleasure you!'}))
+
+function NotFoundError (message) {
+  this.message = message
+  this.stack = Error().stack
+}
+NotFoundError.prototype = Object.create(Error.prototype)
+NotFoundError.prototype.name = 'NotFoundError'
 
 async function getPlaces () {
   let placeIds = await db.allP('SELECT id FROM places')
@@ -41,15 +49,14 @@ router.route('/places')
 async function getPlace (placeId) {
   let row = await db.getP('SELECT name FROM places WHERE id=?', [placeId])
   if (row) {
-    let place = {
+    return {
       id: placeId,
       url: baseUrl + '/places/' + placeId,
       name: row.name,
       plants: await getPlants(placeId)
     }
-    return place
   } else {
-    throw new Error('No such plant!')
+    throw new NotFoundError(404, 'No such plant!')
   }
 }
 
@@ -79,13 +86,17 @@ router.route('/places/:place_id/plants')
   })
 
 async function getPlant (plantId) {
-  const { hidden, name } = await db.getP('SELECT name, hidden FROM plants WHERE id=?', [plantId])
-  return {
-    id: plantId,
-    url: baseUrl + '/plants/' + plantId,
-    name: name,
-    hidden: !!hidden,
-    dates: await getDates(plantId)
+  try {
+    const { hidden, name } = await db.getP('SELECT name, hidden FROM plants WHERE id=?', [plantId])
+    return {
+      id: plantId,
+      url: baseUrl + '/plants/' + plantId,
+      name: name,
+      hidden: !!hidden,
+      dates: await getDates(plantId)
+    }
+  } catch (e) {
+    throw new NotFoundError('No such plant exists!')
   }
 }
 
@@ -105,13 +116,9 @@ router.route('/plants/:plant_id')
   .delete(async (req, res) => {
     // delete plant including its events.
     const plantId = req.params.plant_id
-    try {
-      await db.runP('DELETE FROM events WHERE plant=?', [plantId])
-      await db.runP('DELETE FROM plants WHERE id=?', [plantId])
-      res.sendStatus(204)
-    } catch (e) {
-      res.sendStatus(400)
-    }
+    await db.runP('DELETE FROM events WHERE plant=?', [plantId])
+    await db.runP('DELETE FROM plants WHERE id=?', [plantId])
+    res.sendStatus(204)
   })
 
 async function getDates (plantId) {
@@ -126,24 +133,16 @@ router.route('/plants/:plant_id/dates')
   })
   .post(jsonParser, async (req, res) => {
     const sql = 'INSERT INTO events (plant, d) VALUES (?,?)'
-    try {
-      await db.runP(sql, [req.params.plant_id, req.body.date])
-      res.sendStatus(204)
-    } catch (e) {
-      res.sendStatus(400)
-    }
+    await db.runP(sql, [req.params.plant_id, req.body.date])
+    res.sendStatus(204)
   })
 
 router.route('/plants/:plant_id/dates/:date')
   .delete(async (req, res) => {
     const sql = `DELETE FROM events WHERE plant=? AND id IN (
       SELECT id FROM events e WHERE plant=? AND e.d=? LIMIT 1)`
-    try {
-      await db.runP(sql, [req.params.plant_id, req.params.plant_id, req.params.date])
-      res.sendStatus(204)
-    } catch (e) {
-      res.sendStatus(400)
-    }
+    await db.runP(sql, [req.params.plant_id, req.params.plant_id, req.params.date])
+    res.sendStatus(204)
   })
 
 app.use('/' + baseUrl, router)
@@ -155,6 +154,23 @@ app.use(jadeStatic({
   baseUrl: '/',
   maxAge: 86400
 }))
+
+// Error handlers.
+function notFoundErrorHandler (err, req, res, next) {
+  if (err instanceof NotFoundError) {
+    res.sendStatus(404)
+  } else {
+    next(err)
+  }
+}
+
+function errorHandler (err, req, res, next) {
+  res.sendStatus(500)
+  console.error('Returned HTTP 500 because of error: ', err)
+}
+
+app.use(notFoundErrorHandler)
+app.use(errorHandler)
 
 app.listen(port)
 console.log('Plants server listening on port ' + port)
