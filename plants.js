@@ -43,7 +43,7 @@ router.get('/places', async (req, res) => {
 })
 
 async function getPlace (placeId) {
-  const { rows } = await pool.query('SELECT name FROM places WHERE id=$1', [ placeId ])
+  const { rows } = await pool.query('SELECT name FROM places WHERE id=$1', [placeId])
   if (rows.length === 1) {
     return {
       id: placeId,
@@ -61,7 +61,7 @@ router.get('/places/:place_id', async (req, res) => {
 })
 
 async function getPlants (placeId) {
-  const { rows } = await pool.query('SELECT id FROM plants WHERE place=$1', [ placeId ])
+  const { rows } = await pool.query('SELECT id FROM plants WHERE place=$1', [placeId])
   return Promise.all(rows.map(r => getPlant(r.id)))
 }
 
@@ -71,17 +71,18 @@ router.route('/places/:place_id/plants')
   })
   .post(jsonParser, async (req, res) => {
     try {
-      const sql = 'INSERT INTO plants (name, place, hidden) VALUES ($1, $2, 0) RETURNING id'
-      const { 'rows': [ { id } ] } = await pool.query(sql, [ req.body.name, req.params.place_id ])
+      const sql = 'INSERT INTO plants (name, place, hidden) VALUES ($1, $2, FALSE) RETURNING id'
+      const { rows: [{ id }] } = await pool.query(sql, [req.body.name, req.params.place_id])
       res.json({ plant: await getPlant(id) })
     } catch (e) {
+      console.error('Failed to insert plant. Got error:', e)
       res.sendStatus(400)
     }
   })
 
 async function getPlant (plantId) {
   try {
-    const { rows: [ { hidden, name } ] } = await pool.query('SELECT name, hidden FROM plants WHERE id=$1', [ plantId ])
+    const { rows: [{ hidden, name }] } = await pool.query('SELECT name, hidden FROM plants WHERE id=$1', [plantId])
     return {
       id: plantId,
       url: `${baseUrl}/plants/${plantId}`,
@@ -101,7 +102,7 @@ router.route('/plants/:plant_id')
   .put(jsonParser, async (req, res) => {
     try {
       const sql = 'UPDATE plants SET name=$1,hidden=$2 WHERE id=$3'
-      await pool.query(sql, [ req.body.name, !!req.body.hidden, req.params.plant_id ])
+      await pool.query(sql, [req.body.name, !!req.body.hidden, req.params.plant_id])
       res.sendStatus(204)
     } catch (e) {
       res.sendStatus(400)
@@ -110,13 +111,13 @@ router.route('/plants/:plant_id')
   .delete(async (req, res) => {
     // delete plant including its events.
     const plantId = req.params.plant_id
-    await pool.query('DELETE FROM events WHERE plant=$1', [ plantId ])
-    await pool.query('DELETE FROM plants WHERE id=$1', [ plantId ])
+    await pool.query('DELETE FROM events WHERE plant=$1', [plantId])
+    await pool.query('DELETE FROM plants WHERE id=$1', [plantId])
     res.sendStatus(204)
   })
 
 async function getDates (plantId) {
-  const { rows } = await pool.query('SELECT d FROM events WHERE plant=$1 ORDER BY d', [ plantId ])
+  const { rows } = await pool.query('SELECT d FROM events WHERE plant=$1 ORDER BY d', [plantId])
   return rows.map(r => r.d)
 }
 
@@ -127,7 +128,7 @@ router.route('/plants/:plant_id/dates')
   })
   .post(jsonParser, async (req, res) => {
     const sql = 'INSERT INTO events (plant, d) VALUES ($1, $2)'
-    await pool.query(sql, [ req.params.plant_id, req.body.date ])
+    await pool.query(sql, [req.params.plant_id, req.body.date])
     res.sendStatus(204)
   })
 
@@ -135,7 +136,7 @@ router.route('/plants/:plant_id/dates/:date')
   .delete(async (req, res) => {
     const sql = `DELETE FROM events WHERE plant=$1 AND id IN (
       SELECT id FROM events e WHERE plant=$2 AND e.d=$3 LIMIT 1)`
-    await pool.query(sql, [ req.params.plant_id, req.params.plant_id, req.params.date ])
+    await pool.query(sql, [req.params.plant_id, req.params.plant_id, req.params.date])
     res.sendStatus(204)
   })
 

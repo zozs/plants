@@ -1,6 +1,6 @@
 {
   "name": "plants",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "",
   "author": "Linus Karlsson <plants@linuskarlsson.se>",
   "repository": {
@@ -13,13 +13,15 @@
     "express": "^4.17.0",
     "express-promise-router": "^3.0.3",
     "pg": "^8.5.1",
-    "pug": "^2.0.4",
-    "standard": "^12.0.1"
+    "pug": "^3.0.2"
   },
   "scripts": {
     "postinstall": "bower install",
     "test": "standard"
   },
   "license": "ISC",
-  "main": "plants.js"
+  "main": "plants.js",
+  "devDependencies": {
+    "standard": "^16.0.3"
+  }
 }
